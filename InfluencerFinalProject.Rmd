@@ -1,0 +1,151 @@
+---
+title: "Top Influencers On Instagram Analysis"
+author: "Jessie Pate"
+output:
+  html_document:
+    df_print: paged
+---
+
+Instagram is an American photo and video sharing social networking service founded in 2010 by Kevin Systrom and Mike Krieger, and later acquired by Facebook. The app allows users to upload media that can be edited with filters and organized by hashtags and geographical tagging. Posts can be shared publicly or with preapproved followers. Users can browse other users' content by tag and location, view trending content, like photos, and follow other users to add their content to a personal feed.
+
+Instagram network is very much used to influence people (the user's followers) in a particular way for specific issues - which can impact the order in some ways.
+
+My dataset comes from Aman Chauhan on Kaggle, called 'Top Influencers Crushing On Instagram'.
+
+
+
+|Variable|Description|
+|-------------------|-------------------------------------------------------------------------------|
+|Rank:              | rank of the influencer                                                        |
+|Username:          | username of the instagrammer                                                  |
+|InfluenceScore:    | influence score of the users                                                  |
+|Posts:             | numbers of posts they have made                                               |
+|AvgLikes:          | number of followers the user has                                              |
+|EngagementRate:    | last 60 days engagement rate as faction of engagements they have done so far  |
+|AvgLikesNewPost:   | average likes the user has on new posts                                       |
+|TotalLikes:        | total likes the user has gotten on their posts (in billions)                  |
+|CountryOrRegion:   | country or region of the user                                                 |
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+influencer <- read.csv("https://raw.githubusercontent.com/jessiepate/influencers/main/Top_Influencers.csv")
+sample(influencer)
+```
+
+```{r}
+influencer
+```
+
+When I downloaded this dataset, the variable names came with unnecessary periods between the words. To make this cleaner, I renamed the variables that included this and removed the periods.
+
+```{r}
+influencer <- influencer %>% 
+  rename(Username = Channel.Info,
+         InfluenceScore = Influence.Score,
+         AvgLikes = Avg..Likes,
+         EngagementRate = X60.Day.Eng.Rate,
+         AvgLikesNewPost = New.Post.Avg..Likes,
+         TotalLikes = Total.Likes,
+         CountryOrRegion = Country.Or.Region
+  )
+```
+
+I found that in order to properly plot my data, I have to separate the abbreviations for billion (b), million (m), and thousand (k) from the numeric value. This has helped me make plotting easier.
+
+Average Likes are mainly in millions, posts are in thousands, and total likes are mainly in billions.
+
+```{r}
+influencer <- influencer %>% 
+  separate(AvgLikes, sep = -1, into= "AvgLikes", convert = T) %>% 
+  separate(Posts, sep= -1, into= "Posts", convert = T) %>% 
+  separate(AvgLikesNewPost, sep = -1, into = "AvgLikesNewPost", convert = T) %>% 
+  separate(TotalLikes, sep = -1, into = "TotalLikes", convert = T) %>% 
+  separate(Followers, sep = -1, into = "Followers", convert = T )
+influencer
+```
+
+1. What is the correlation between Country of Origin and Influence Score?
+
+I was curious about what the most popular countries were for the top influencers. From this, it looks like The United States is the most popular country for influential posters to live. The second most popular country/region looks like either India or Brazil. These results make sense because of how high the populations are in these areas, as well as, how widespread social media is.
+
+An issue I had with this, however, is that there is a row at the very bottom without a label, show for empty "CountryOrRegion" values. I have tried to use drop_na() but I could not get it to remove these blank values.
+
+```{r}
+ggplot(influencer,aes(x=CountryOrRegion, y=InfluenceScore))+
+  geom_segment(aes(x= CountryOrRegion, xend= CountryOrRegion, y=0, yend=InfluenceScore), color="darkgreen") +
+  geom_point(color="darkorchid", size=3.5, alpha=.6) +
+  coord_flip()+
+  theme_minimal()+
+  labs(title= "Correlation Between Influence Score and Country/Region")
+```
+
+
+2. Who has the highest and lowest follower count in the data set?
+
+My goal with this was simply to see who was the most and least popular in relation to this data set. All I did to find this was take the max and min of the Follower variable.
+
+```{r}
+numOne = influencer%>%
+  filter(Followers == max(Followers, na.rm = TRUE))
+numOne
+```
+
+```{r}
+lastOne = influencer %>% 
+  filter(Followers == min(Followers, na.rm = TRUE))
+lastOne
+```
+
+3. What is the relation between ranks and total likes?
+
+I wanted to explore this data to see possible correlations between higher and lower ranks and their total likes. However, these are not necessarily correlated due to a number of unseen factors. 
+Elements such as number of posts, how dedicated their fan base is, as well as how long they have had their account and been posting could impact the output of this data.
+
+```{r}
+ggplot(influencer) +
+  geom_line(mapping = aes(x= Rank, y= TotalLikes), color= "hotpink")+
+  theme_minimal()+
+  labs(title = "Correlation Between Rank and Total Likes",
+    y="Total Likes (in billions)")
+```
+4. Who has the greatest and least total likes?
+
+My goal with this again is just to see the user leading and lowest amount of total likes. Once again, I did this by filtering TotalLikes by max and min functions.
+
+```{r}
+influencer %>% 
+  filter(TotalLikes == max(TotalLikes, na.rm = TRUE))
+```
+
+
+```{r}
+influencer %>% 
+  filter(TotalLikes == min(TotalLikes, na.rm = TRUE))
+```
+
+There is a tie here for the least amount of total likes. Both of these influencers, Addison Rae, the TikToker, and Gucci, the fashion brand, match each other with one million total likes. Despite having the same amount of total likes, Gucci is still more popular in a few ways-- the company has a higher rank, influence score, engagement rate, and more followers. This means your total likes do not always mean a higher popularity. It is possible that a user could have had a viral post, leaving them with more likes but a lower follower count or influence score.
+
+
+5. What is the correlation between the number of posts and influence score?
+
+The objective with this was to see if a user posted a certain amount, would it lead to them being more or less influential?
+
+```{r}
+influencer %>% 
+  ggplot()+
+  geom_point(aes(x=InfluenceScore, y= Posts), color="aquamarine3", size = 3, alpha = 0.5)
+```
+
+The conclusion that I came to is that the number of posts does not have quite as much influence on popularity as I previously thought. It seems that a majority of influencers who are higher up in popularity do not post that often and tend to cluster around 0-25 posts overall. There are some outliers who have 50+ posts with higher influencer scores, as well as users who have lower scores with a large amount of posts. The user with the lowest influence score has a larger amount of posts than the majority.
+
+
+### Future Works
+
+There are quite a few ways you could keep exploring this data set. We could use different packages to make more complex graphs to further analyze the relationship between variables like EngagementRate, AvgLikesNewPost, TotalLikes, etc. Additionally, we could look at specific influencers that have been in recent news and look at the correlation in average likes of new posts.
+
